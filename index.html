@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎉 AR-Відео — Lessa2332 🎈</title>
+    <title>🎉 AR-SmartLessa 🎈</title>
 
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -51,14 +51,62 @@
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-        .pulse {
-            animation: pulse 2s infinite;
+        .pulse { animation: pulse 2s infinite; }
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: flex;
+            gap: 10px;
         }
+
+        /* Стилі для кнопок керування відео */
+        .video-controls {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: none; /* Приховані за замовчуванням */
+            gap: 10px;
+        }
+        .video-controls button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
+            font-size: 1em;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        #play-btn { background-color: #4CAF50; color: white; }
+        #pause-btn { background-color: #2196F3; color: white; }
+        #stop-btn { background-color: #f44336; color: white; }
+
+        /* Стилі для кнопки YouTube */
+        .youtube-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
+            font-size: 1em;
+            background-color: #FF0000;
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+        .youtube-btn:hover { transform: scale(1.05); }
+
     </style>
 </head>
 <body>
     <div class="arjs-loader" id="loader">
-        <div class="pulse">🎉 Ласкаво просимо! Наведіть камеру на маркер! 🎈</div>
+        <div class="pulse">🎉 З ДНЕМ МИРУ!! Наведіть камеру на маркер! 🎈</div>
     </div>
 
     <a-scene
@@ -70,14 +118,13 @@
         renderer="colorManagement: true; physicallyCorrectLights: true;"
     >
         <a-assets>
-            <video id="ar-video" src="https://raw.githubusercontent.com/Lessa2332/ar-vid.mp4" loop="true" crossorigin="anonymous"></video>
+            <video id="ar-video" src="https://raw.githubusercontent.com/Lessa2332/ar/main/ar-vid.mp4" loop="true" crossorigin="anonymous"></video>
         </a-assets>
 
         <a-camera
             look-controls="enabled: false"
             position="0 0 0"
-        >
-        </a-camera>
+        ></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0">
             <a-video
@@ -92,28 +139,35 @@
         </a-entity>
     </a-scene>
 
-    <script>
-        // Компонент A-Frame для відтворення відео по кліку (не обов'язково, але краще для сумісності)
-        AFRAME.registerComponent('play-on-click', {
-            init: function() {
-                const videoEl = document.querySelector('#ar-video');
-                this.el.addEventListener('click', () => {
-                    console.log("▶️ Клік по відео! Запускаємо відтворення.");
-                    videoEl.play();
-                });
-            }
-        });
+    <div class="video-controls" id="video-controls">
+        <button id="play-btn">▶️ Грати</button>
+        <button id="pause-btn">⏸️ Пауза</button>
+        <button id="stop-btn">⏹️ Стоп</button>
+    </div>
 
-        // Основна логіка
+    <div class="controls">
+        <a href="https://www.youtube.com/@23SmartLessa32" target="_blank" class="youtube-btn">📺 YouTube</a>
+    </div>
+
+    <script>
+        // Елементи DOM
         const loader = document.querySelector('#loader');
         const targetEntity = document.querySelector('a-entity[mindar-image-target]');
         const videoPlane = document.querySelector('#video-plane');
         const arVideo = document.querySelector('#ar-video');
+        const videoControls = document.querySelector('#video-controls');
+        const playBtn = document.querySelector('#play-btn');
+        const pauseBtn = document.querySelector('#pause-btn');
+        const stopBtn = document.querySelector('#stop-btn');
 
+        // Логіка відтворення/паузи відео при знаходженні/втраті маркера
         targetEntity.addEventListener('targetFound', () => {
             console.log("🎯 Маркер знайдено! Показуємо відео.");
             loader.style.display = 'none';
             videoPlane.setAttribute('visible', 'true');
+            videoControls.style.display = 'flex'; // Показати кнопки керування
+
+            // Автоматичне відтворення, якщо відео на паузі
             if (arVideo.paused) {
                 arVideo.play().catch(e => console.log("🔇 Відео не запустилося:", e));
             }
@@ -122,10 +176,26 @@
         targetEntity.addEventListener('targetLost', () => {
             console.log("❌ Маркер втрачено! Ховаємо відео.");
             videoPlane.setAttribute('visible', 'false');
+            videoControls.style.display = 'none'; // Приховати кнопки
             arVideo.pause();
-            arVideo.currentTime = 0; // Скидаємо відтворення на початок
+        });
+
+        // Обробники подій для кнопок керування
+        playBtn.addEventListener('click', () => {
+            console.log("▶️ Запуск відео.");
+            arVideo.play().catch(e => console.log("🔇 Відео не запустилося:", e));
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            console.log("⏸️ Пауза відео.");
+            arVideo.pause();
+        });
+
+        stopBtn.addEventListener('click', () => {
+            console.log("⏹️ Зупинка відео.");
+            arVideo.pause();
+            arVideo.currentTime = 0; // Скинути відео на початок
         });
     </script>
 </body>
 </html>
-
