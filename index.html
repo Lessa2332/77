@@ -63,14 +63,13 @@
             gap: 10px;
         }
 
-        /* Стилі для кнопок керування відео */
         .video-controls {
             position: fixed;
             bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10000;
-            display: none; /* Приховані за замовчуванням */
+            display: none;
             gap: 10px;
         }
         .video-controls button {
@@ -86,7 +85,6 @@
         #pause-btn { background-color: #2196F3; color: white; }
         #stop-btn { background-color: #f44336; color: white; }
 
-        /* Стилі для кнопки YouTube */
         .youtube-btn {
             padding: 10px 20px;
             border: none;
@@ -107,6 +105,7 @@
 <body>
     <div class="arjs-loader" id="loader">
         <div class="pulse">🎉 З ДНЕМ МИРУ!! Наведіть камеру на маркер! 🎈</div>
+        <div id="loading-status" style="font-size: 0.9em; margin-top: 10px;">Завантаження AR-відео...</div>
     </div>
 
     <a-scene
@@ -150,8 +149,8 @@
     </div>
 
     <script>
-        // Елементи DOM
         const loader = document.querySelector('#loader');
+        const loadingStatus = document.querySelector('#loading-status');
         const targetEntity = document.querySelector('a-entity[mindar-image-target]');
         const videoPlane = document.querySelector('#video-plane');
         const arVideo = document.querySelector('#ar-video');
@@ -160,27 +159,37 @@
         const pauseBtn = document.querySelector('#pause-btn');
         const stopBtn = document.querySelector('#stop-btn');
 
-        // Логіка відтворення/паузи відео при знаходженні/втраті маркера
+        // Перевірка стану завантаження відео
+        arVideo.oncanplaythrough = () => {
+            loadingStatus.textContent = "Відео завантажено, готові до запуску!";
+            console.log("✅ Відео успішно завантажено.");
+        };
+
+        arVideo.onerror = (e) => {
+            console.error("❌ Помилка завантаження відео:", e);
+            loadingStatus.textContent = "Помилка! Відео не завантажилося. Перевірте посилання.";
+        };
+
         targetEntity.addEventListener('targetFound', () => {
             console.log("🎯 Маркер знайдено! Показуємо відео.");
             loader.style.display = 'none';
             videoPlane.setAttribute('visible', 'true');
-            videoControls.style.display = 'flex'; // Показати кнопки керування
+            videoControls.style.display = 'flex';
 
-            // Автоматичне відтворення, якщо відео на паузі
             if (arVideo.paused) {
-                arVideo.play().catch(e => console.log("🔇 Відео не запустилося:", e));
+                arVideo.play().catch(e => {
+                    console.log("🔇 Автоматичне відтворення заблоковано. Натисніть кнопку 'Грати'.", e);
+                });
             }
         });
 
         targetEntity.addEventListener('targetLost', () => {
             console.log("❌ Маркер втрачено! Ховаємо відео.");
             videoPlane.setAttribute('visible', 'false');
-            videoControls.style.display = 'none'; // Приховати кнопки
+            videoControls.style.display = 'none';
             arVideo.pause();
         });
 
-        // Обробники подій для кнопок керування
         playBtn.addEventListener('click', () => {
             console.log("▶️ Запуск відео.");
             arVideo.play().catch(e => console.log("🔇 Відео не запустилося:", e));
@@ -194,7 +203,7 @@
         stopBtn.addEventListener('click', () => {
             console.log("⏹️ Зупинка відео.");
             arVideo.pause();
-            arVideo.currentTime = 0; // Скинути відео на початок
+            arVideo.currentTime = 0;
         });
     </script>
 </body>
